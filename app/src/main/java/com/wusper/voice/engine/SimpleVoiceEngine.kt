@@ -19,6 +19,7 @@ import kotlin.math.roundToInt
 /** 1.0.0 stub 引擎：可實時／預覽；正式 DSP 可替換實作。 */
 class SimpleVoiceEngine : VoiceEngine {
 
+    private val dsp = PitchFormantDsp()
     private val paramsRef = AtomicReference(VoiceParams())
     private val realtimeRunning = AtomicBoolean(false)
     private val previewRecording = AtomicBoolean(false)
@@ -115,7 +116,8 @@ class SimpleVoiceEngine : VoiceEngine {
                 val frameStart = System.nanoTime()
                 val read = recorder.read(input, 0, input.size)
                 if (read <= 0) continue
-                val processed = applyPitch(input, read, paramsRef.get().pitchSemitones)
+                val p = paramsRef.get()
+                val processed = dsp.process(input, read, p.pitchSemitones, p.formantScale)
                 track.write(processed, 0, processed.size)
                 val frameMs = (System.nanoTime() - frameStart) / 1_000_000L
                 latencyRef.set((read * 1000L / sampleRate) + frameMs)
@@ -150,7 +152,7 @@ class SimpleVoiceEngine : VoiceEngine {
     }
 
     private fun playProcessed(pcm: ShortArray, params: VoiceParams) {
-        val processed = applyPitch(pcm, pcm.size, params.pitchSemitones)
+        val processed = dsp.process(pcm, pcm.size, params.pitchSemitones, params.formantScale)
         val bufSize = minBufferSize()
         val track = buildTrack(max(bufSize, 2048)) ?: return
         try {
