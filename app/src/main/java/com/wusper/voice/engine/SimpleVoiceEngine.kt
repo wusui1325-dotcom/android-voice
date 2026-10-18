@@ -94,16 +94,7 @@ class SimpleVoiceEngine : VoiceEngine {
     }
 
     override fun recommendParams(profile: VoiceProfile): VoiceParams {
-        val targetF0 = 220f
-        val semitones = if (profile.f0Hz > 40f) {
-            (12.0 * kotlin.math.log((targetF0 / profile.f0Hz).toDouble(), 2.0))
-                .toFloat()
-                .coerceIn(4f, 7f)
-        } else {
-            5.5f
-        }
-        val formant = (1.1f + (profile.formantHint - 1f) * 0.15f).coerceIn(1.1f, 1.25f)
-        return VoiceParams(pitchSemitones = semitones, formantScale = formant)
+        return FemalePresets.recommend(profile)
     }
 
     private fun minBufferSize(): Int {

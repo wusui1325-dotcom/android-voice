@@ -1,142 +1,109 @@
 package com.wusper.voice.ui
 
-import android.app.Application
-import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
-import com.wusper.voice.debug.LatencyProbe
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.wusper.voice.engine.SimpleVoiceEngine
 import com.wusper.voice.engine.VoiceEngine
+import com.wusper.voice.engine.FemalePresets
 import com.wusper.voice.engine.VoiceParams
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 class VoiceViewModel(
-    app: Application,
     private val engine: VoiceEngine = SimpleVoiceEngine(),
-) : AndroidViewModel(app) {
+) : ViewModel() {
 
-    private val prefs = app.getSharedPreferences("voice_ui", Context.MODE_PRIVATE)
-    private val probe = LatencyProbe(engine)
-
-    var pitch by mutableFloatStateOf(VoiceParams().pitchSemitones)
+    var pitch by mutableFloatStateOf(engine.getParams().pitchSemitones)
         private set
-    var formant by mutableFloatStateOf(VoiceParams().formantScale)
+    var formant by mutableFloatStateOf(engine.getParams().formantScale)
         private set
     var realtimeOn by mutableStateOf(false)
         private set
-    var previewRecording by mutableStateOf(false)
-        private set
-    var onboarding by mutableStateOf(!prefs.getBoolean(KEY_ONBOARD_DONE, false))
-        private set
-    var onboardingRecording by mutableStateOf(false)
+    var previewOn by mutableStateOf(false)
         private set
     var latencyMs by mutableLongStateOf(0L)
-        private set
-    var latencySummary by mutableStateOf("")
         private set
     var status by mutableStateOf("就緒")
         private set
 
-    fun onPitchChange(v: Float) {
-        pitch = v.coerceIn(VoiceParams.RANGE_PITCH.start, VoiceParams.RANGE_PITCH.endInclusive)
-        pushParams()
+    private var latencyJob: Job? = null
+
+    init {
+        latencyJob = viewModelScope.launch {
+            while (isActive) {
+                latencyMs = engine.latencyMs()
+                delay(400)
+            }
+        }
     }
 
-    fun onFormantChange(v: Float) {
-        formant = v.coerceIn(VoiceParams.RANGE_FORMANT.start, VoiceParams.RANGE_FORMANT.endInclusive)
-        pushParams()
+    fun onPitch(v: Float) {
+        pitch = v
+        engine.setParams(VoiceParams(pitchSemitones = pitch, formantScale = formant))
+    }
+
+    fun onFormant(v: Float) {
+        formant = v
+        engine.setParams(VoiceParams(pitchSemitones = pitch, formantScale = formant))
     }
 
     fun toggleRealtime() {
+        if (previewOn) stopPreview()
         if (realtimeOn) {
             engine.stopRealtime()
             realtimeOn = false
-            status = "實時已停止"
+            status = "已停止即時變聲"
         } else {
-            if (previewRecording) stopPreview()
+            engine.setParams(VoiceParams(pitchSemitones = pitch, formantScale = formant))
             engine.startRealtime()
             realtimeOn = true
-            status = "實時變聲中"
-            refreshLatency()
+            status = "即時變聲中"
         }
     }
 
     fun togglePreview() {
-        if (previewRecording) {
-            stopPreview()
-        } else {
-            if (realtimeOn) {
-                engine.stopRealtime()
-                realtimeOn = false
-            }
-            engine.startPreviewRecord()
-            previewRecording = true
-            status = "錄音中…"
-        }
-    }
-
-    fun startOnboarding() {
         if (realtimeOn) {
             engine.stopRealtime()
             realtimeOn = false
         }
-        engine.startOnboardingRecord()
-        onboardingRecording = true
-        status = "引導錄音中，請說幾句話"
-    }
-
-    fun finishOnboarding() {
-        onboardingRecording = false
-        status = "分析中…"
-        val profile = engine.finishOnboardingAnalyze()
-        val recommended = engine.recommendParams(profile)
-        pitch = recommended.pitchSemitones
-        formant = recommended.formantScale
-        pushParams()
-        prefs.edit().putBoolean(KEY_ONBOARD_DONE, true).apply()
-        onboarding = false
-        status = "已套用推薦（f0≈${profile.f0Hz.toInt()} Hz）"
-    }
-
-    fun skipOnboarding() {
-        prefs.edit().putBoolean(KEY_ONBOARD_DONE, true).apply()
-        onboarding = false
-        status = "已跳過引導"
-    }
-
-    fun applyFemalePreset() {
-        onPitchChange(5.5f)
-        onFormantChange(1.15f)
-        status = "已套用女聲預設"
+        if (previewOn) {
+            stopPreview()
+        } else {
+            engine.startPreviewRecord()
+            previewOn = true
+            status = "錄音預覽中…"
+        }
     }
 
     private fun stopPreview() {
         engine.stopPreviewAndPlay()
-        previewRecording = false
+        previewOn = false
         status = "播放預覽"
-        refreshLatency()
     }
 
-    fun refreshLatency() {
-        latencyMs = probe.sampleOnce()
-        latencySummary = probe.summary()
-    }
-
-    private fun pushParams() {
-        engine.setParams(VoiceParams(pitchSemitones = pitch, formantScale = formant))
+    fun runOnboarding() {
+        viewModelScope.launch {
+            status = "引導錄音中（請說話 3–5 秒）…"
+            engine.startOnboardingRecord()
+            delay(4_000)
+            val profile = engine.finishOnboardingAnalyze()
+            val rec = engine.recommendParams(profile)
+            onPitch(rec.pitchSemitones)
+            onFormant(rec.formantScale)
+            status = "已套用推薦（f0≈${profile.f0Hz.toInt()}Hz，信心 ${(profile.confidence * 100).toInt()}%）"
+        }
     }
 
     override fun onCleared() {
+        latencyJob?.cancel()
         engine.stopRealtime()
         super.onCleared()
-    }
-
-    init { pushParams() }
-
-    companion object {
-        private const val KEY_ONBOARD_DONE = "onboard_done"
     }
 }
