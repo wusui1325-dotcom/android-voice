@@ -6,9 +6,9 @@ package com.wusper.voice.engine
  */
 data class VoiceParams(
     /** 音高偏移（半音），範圍 -12f..+12f；女聲預設約 +4f..+7f */
-    val pitchSemitones: Float = 5f,
+    val pitchSemitones: Float = 5.5f,
     /** 共振峰縮放，範圍 0.7f..1.4f；女聲預設約 1.1f..1.25f */
-    val formantScale: Float = 1.15f,
+    val formantScale: Float = 1.18f,
 ) {
     init {
         require(pitchSemitones in -12f..12f) { "pitchSemitones out of range" }

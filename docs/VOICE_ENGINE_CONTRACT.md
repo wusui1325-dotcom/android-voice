@@ -12,3 +12,7 @@
 2. 使用者說幾句（約 3–5 秒）→ `finishOnboardingAnalyze()` 得 `VoiceProfile`（僅本機）
 3. `recommendParams(profile)` → 套用並可讓使用者微調兩軸滑桿
 4. 標記引導完成（SharedPreferences 等，UI 負責）
+
+## 女聲預設
+
+見 `FemalePresets.kt` 與 [FEMALE_PRESETS.md](./FEMALE_PRESETS.md)。DSP 的 `recommendParams` 應委派 `FemalePresets.recommend`。
