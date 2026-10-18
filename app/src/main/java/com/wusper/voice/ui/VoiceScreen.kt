@@ -44,7 +44,7 @@ fun VoiceScreen(vm: VoiceViewModel) {
         }
 
         if (vm.onboarding) {
-            Text("首次進 app：本地短錄 3–5 秒以推薦參數（不上網）")
+            Text("本地短錄 3–5 秒以推薦參數（不上網；可隨時重做）")
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = {
                     if (vm.onboardingRecording) vm.finishOnboarding() else vm.startOnboarding()
@@ -88,5 +88,10 @@ fun VoiceScreen(vm: VoiceViewModel) {
         }
 
         OutlinedButton(onClick = vm::applyFemalePreset) { Text("套用女聲預設") }
+        if (!vm.onboarding) {
+            OutlinedButton(onClick = vm::redoOnboarding, modifier = Modifier.fillMaxWidth()) {
+                Text("重新錄音推薦參數")
+            }
+        }
     }
 }

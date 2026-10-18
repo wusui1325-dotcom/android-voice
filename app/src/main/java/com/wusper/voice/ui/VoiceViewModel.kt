@@ -125,6 +125,21 @@ class VoiceViewModel(
         status = "已跳過引導，套用女聲預設"
     }
 
+    /** 隨時重做本地錄音／推薦（不只首次）。 */
+    fun redoOnboarding() {
+        if (realtimeOn) {
+            engine.stopRealtime()
+            realtimeOn = false
+        }
+        if (previewRecording) {
+            engine.stopPreviewAndPlay()
+            previewRecording = false
+        }
+        onboardingRecording = false
+        onboarding = true
+        status = "可重新錄音以推薦參數"
+    }
+
     fun applyFemalePreset() {
         val p = FemalePresets.DEFAULT
         pitch = p.pitchSemitones
