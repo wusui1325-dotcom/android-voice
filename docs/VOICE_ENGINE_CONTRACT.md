@@ -8,29 +8,17 @@
 
 ## 本地錄音推薦（可隨時重做）
 
-不只首次引導；UI 可隨時重跑同一流程：
-
 1. `startOnboardingRecord()`（約 3–5 秒）
-2. `finishOnboardingAnalyze()` → `VoiceProfile`（僅本機，不上網）
-3. `recommendParams(profile)` → 套用；使用者仍可微調兩軸
+2. `finishOnboardingAnalyze()` → `VoiceProfile`（僅本機）
+3. `recommendParams(profile)` → 套用；可微調兩軸  
+UI 須提供隨時重錄入口（非僅首次）。
 
-## 實時路徑（現行 1.0）
+## 實時路徑（產品範圍）
 
-`AudioRecord` → DSP → `AudioTrack`（App 內監看：喇叭／耳機）。  
-**不是**系統麥克風替換。
+`AudioRecord` → DSP → `AudioTrack`（App 內監看：喇叭／耳機）。
 
 ## 產品邊界（老闆定案）
 
-目標要「第三方遊戲麥／Discord 等：別人聽到變聲、原麥不進溝通」。
-
-| 條件 | 結論 |
-|------|------|
-| 無 root、普通 APK | **做不到** 通用代麥（無法關掉他 App 原麥、無法灌進系統 mic） |
-| 自有 WebRTC／自建通道 | 可做變聲上行（非本階段優先） |
-| root／虛擬音訊驅動／系統簽名 | 另開產品線；**1.1 不假裝**能用普通 APK 達成 |
-
-1.1 若開「代麥」必須標為 root／特殊構建，不可與監看版混稱已達成通用代麥。
-
-## 女聲預設
-
-見 `FemalePresets.kt` 與 [FEMALE_PRESETS.md](./FEMALE_PRESETS.md)。DSP 的 `recommendParams` 應委派 `FemalePresets.recommend`。
+- **要做**：App 內變聲、調參、錄音預覽、隨時重錄推薦。
+- **不做**：無 root 下第三方遊戲麥／Discord／系統通話代麥（普通 APK 做不到）。
+- **也不開**：root／虛擬驅動版；產品文案標清楚邊界，**不假裝**能通用代麥。
