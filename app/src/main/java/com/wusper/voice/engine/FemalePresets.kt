@@ -9,7 +9,7 @@ object FemalePresets {
     /** 通用女聲預設（多數來源聲線的起點） */
     val DEFAULT = VoiceParams(
         pitchSemitones = 5.5f,
-        formantScale = 1.18f,
+        formantScale = 1.24f,
     )
 
     /** 偏柔和／偏低女聲 */

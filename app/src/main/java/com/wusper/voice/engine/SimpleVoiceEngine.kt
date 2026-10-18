@@ -19,7 +19,7 @@ import kotlin.math.roundToInt
 /** 1.0.0：AudioRecord → PitchFormantDsp → AudioTrack。 */
 class SimpleVoiceEngine : VoiceEngine {
 
-    private val dsp = PitchFormantDsp()
+    private val dsp = PitchFormantDsp(sampleRate = 48_000)
     private val paramsRef = AtomicReference(VoiceParams())
     private val realtimeRunning = AtomicBoolean(false)
     private val previewRecording = AtomicBoolean(false)
@@ -46,6 +46,7 @@ class SimpleVoiceEngine : VoiceEngine {
         if (!realtimeRunning.compareAndSet(false, true)) return
         realtimeThread = thread(name = "voice-realtime", priority = Thread.MAX_PRIORITY) {
             Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
+            dsp.reset()
             runRealtimeLoop()
         }
     }
