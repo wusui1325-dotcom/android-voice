@@ -6,9 +6,7 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-/**
- * 時域顆粒變調＋共振峰縮放，輸出時長與輸入對齊（即時鏈用）。
- */
+/** 時域顆粒變調＋共振峰縮放，輸出時長與輸入對齊。 */
 class PitchFormantDsp {
     fun process(
         input: ShortArray,
@@ -19,12 +17,10 @@ class PitchFormantDsp {
         val pitch = 2.0.pow((pitchSemitones / 12.0)).toFloat().coerceIn(0.5f, 2.0f)
         val formant = formantScale.coerceIn(0.7f, 1.4f)
         if (length <= 4) return input.copyOf(length)
-
         val readRate = (pitch / formant).coerceIn(0.5f, 2.0f)
         if (kotlin.math.abs(readRate - 1f) < 0.01f && kotlin.math.abs(formant - 1f) < 0.02f) {
             return input.copyOf(length)
         }
-
         val grain = min(1024, length).coerceAtLeast(64)
         val hop = (grain / 4).coerceAtLeast(16)
         val out = FloatArray(length)
@@ -32,7 +28,6 @@ class PitchFormantDsp {
         val window = FloatArray(grain) { n ->
             (0.5 * (1.0 - cos(2.0 * PI * n / (grain - 1)))).toFloat()
         }
-
         var outPos = 0
         var srcPos = 0.0
         val wrapAt = (length - grain / 2).coerceAtLeast(1)
@@ -48,20 +43,15 @@ class PitchFormantDsp {
             }
             outPos += hop
             srcPos += hop * readRate
-            if (srcPos > wrapAt) {
-                srcPos %= wrapAt.toDouble()
-            }
+            if (srcPos > wrapAt) srcPos %= wrapAt.toDouble()
         }
-
         val result = ShortArray(length)
         val tilt = 1f + (formant - 1f) * 0.15f
         for (i in 0 until length) {
             val w = weight[i]
             val sample = if (w > 1e-6f) out[i] / w else input[i].toFloat()
-            result[i] = (sample * tilt)
-                .roundToInt()
-                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
-                .toShort()
+            result[i] = (sample * tilt).roundToInt()
+                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
         return result
     }

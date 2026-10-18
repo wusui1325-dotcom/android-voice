@@ -16,7 +16,7 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-/** 1.0.0 stub 引擎：可實時／預覽；正式 DSP 可替換實作。 */
+/** 1.0.0：AudioRecord → PitchFormantDsp → AudioTrack。 */
 class SimpleVoiceEngine : VoiceEngine {
 
     private val dsp = PitchFormantDsp()
@@ -204,26 +204,6 @@ class SimpleVoiceEngine : VoiceEngine {
         )
     }
 
-    private fun applyPitch(input: ShortArray, length: Int, pitchSemitones: Float): ShortArray {
-        val rate = 2.0.pow((pitchSemitones / 12.0)).toFloat().coerceIn(0.5f, 2.0f)
-        if (abs(rate - 1f) < 0.01f) return input.copyOf(length)
-        val outLen = max(1, (length / rate).roundToInt())
-        val out = ShortArray(outLen)
-        var i = 0
-        while (i < outLen) {
-            val src = i * rate
-            val i0 = src.toInt()
-            val i1 = min(i0 + 1, length - 1)
-            val frac = src - i0
-            if (i0 >= length) break
-            val s0 = input[i0].toFloat()
-            val s1 = input[i1].toFloat()
-            out[i] = (s0 + (s1 - s0) * frac).roundToInt()
-                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
-            i++
-        }
-        return out
-    }
 
     private fun buildRecorder(bufSize: Int): AudioRecord? = try {
         AudioRecord(
