@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Wusper Voice</string>
+    <string name="app_name">變聲器</string>
+    <string name="pitch_label">音高（半音）</string>
+    <string name="formant_label">共振峰</string>
+    <string name="start_realtime">開始即時變聲</string>
+    <string name="stop_realtime">停止即時變聲</string>
+    <string name="start_preview">錄音預覽</string>
+    <string name="stop_preview">停止並播放</string>
+    <string name="latency">延遲：%1$d ms</string>
+    <string name="need_mic">需要麥克風權限</string>
 </resources>
